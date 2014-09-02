@@ -2,9 +2,10 @@ __author__ = 'cltanuki'
 import requests
 from bs4 import BeautifulSoup
 from multiprocessing import Process, Queue
+from grabber import LinkGrabber
 
 
-class Grabber():
+class Worker():
 
     def __init__(self, domain, start_url, dir_str):
         self.domain = domain
@@ -12,31 +13,38 @@ class Grabber():
         self.dir_links = Queue()
         self.profile_links = Queue()
         self.dir_str = dir_str
+        self.jobs = []
 
-    def get_start_links(self):
-        page = requests.get(self.start_url)
+    def _get_start_links(self):
+        page = requests.get(self.domain + self.start_url)
         soup = BeautifulSoup(page.text)
         links_div = soup.find('div', class_='top-levels')
         links = [link['href'] for link in links_div.find_all('a')]
-        links.append(self.domain + '/i/directory/profiles/a')
+        links.append('/i/directory/profiles/a')
         return links
 
-    def grab_links(self, link):
-        page = requests.get(self.domain + link)
-        soup = BeautifulSoup(page.text)
-        links_div = soup.find('div', class_='directory-page').find('div', class_='row')
-        links = [link['href'] for link in links_div.find_all('a')]
-        for link in links:
-            if self.dir_str in link:
-                self.dir_links.append
+    def start_grabber(self, link):
+        grabber = LinkGrabber(domain=self.domain, start_url=self.start_url, dir_str=self.dir_str,
+                              dir_links=self.dir_links, profile_links=self.profile_links, start_link=link)
+        grabber.main()
 
-    def main(self):
-        self.grab_links(self.get_start_links())
+    def set_workers(self):
+        links = self._get_start_links()
+        print(links)
+        for link in links:
+            self.jobs.append(Process(target=self.start_grabber, args=(link, )))
+
+    def start_workers(self):
+        self.set_workers()
+        for job in self.jobs:
+            job.start()
+        print(u"All workers were started")
 
 
 if __name__ == '__main__':
-    grabber = Grabber(domain='https://twitter.com', start_url='https://twitter.com/i/directory/profiles')
-    grabber.main()
+    grabber = Worker(domain='https://twitter.com', dir_str='directory',
+                     start_url='/i/directory/profiles')
+    grabber.start_workers()
 
 # for link in links:
 #     print(link)
