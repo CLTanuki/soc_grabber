@@ -19,15 +19,11 @@ class LinkGrabber():
         page = requests.get(self.domain + link)
         soup = BeautifulSoup(page.text)
         links_div = soup.find('div', class_='directory-page').find('div', class_='row')
-        links = [link['href'] for link in links_div.find_all('a')]
-        for link in links:
-            if self.dir_str in link:
-                self.dir_links_queue.put(link)
-            elif len(link) < 30:
-                self.profile_links_queue.put(link)
+        for link in links_div.find_all('a'):
+            if self.dir_str in link['href']:
+                self.dir_links_queue.put(link['href'])
             else:
-                print(link)
-                os._exit()
+                self.profile_links_queue.put({'screenname': link.content, 'url': link['href']})
 
     def get_dir_links(self):
         while not self.dir_links_queue.empty():

@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from multiprocessing import Process, Queue
 from grabber import LinkGrabber
+from commiter import Commiter
 
 
 class Worker():
@@ -28,11 +29,16 @@ class Worker():
                               dir_links=self.dir_links, profile_links=self.profile_links, start_link=link)
         grabber.main()
 
+    def start_commiter(self, profile_queue):
+        commiter = Commiter(profile_queue=profile_queue)
+        commiter.main()
+
     def set_workers(self):
         links = self._get_start_links()
         print(links)
         for link in links:
             self.jobs.append(Process(target=self.start_grabber, args=(link, )))
+        self.jobs.append(Process(target=self.start_commiter, args=(self.profile_links, )))
 
     def start_workers(self):
         self.set_workers()
