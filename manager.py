@@ -8,13 +8,15 @@ from commiter import Commiter
 
 class Worker():
 
-    def __init__(self, domain, start_url, dir_str):
+    def __init__(self, domain, start_url, dir_str, first_class, second_class):
         self.domain = domain
         self.start_url = start_url
         self.dir_links = Queue()
         self.profile_links = Queue()
         self.dir_str = dir_str
         self.jobs = []
+        self.first_class = first_class
+        self.second_class = second_class
 
     def _get_start_links(self):
         page = requests.get(self.domain + self.start_url)
@@ -26,7 +28,8 @@ class Worker():
 
     def start_grabber(self, link):
         grabber = LinkGrabber(domain=self.domain, start_url=self.start_url, dir_str=self.dir_str,
-                              dir_links=self.dir_links, profile_links=self.profile_links, start_link=link)
+                              dir_links=self.dir_links, profile_links=self.profile_links, start_link=link,
+                              first_class=self.first_class, second_class=self.second_class)
         grabber.main()
 
     def start_commiter(self, profile_queue):
@@ -48,9 +51,6 @@ class Worker():
 
 
 if __name__ == '__main__':
-    grabber = Worker(domain='https://twitter.com', dir_str='directory',
-                     start_url='/i/directory/profiles')
+    grabber = Worker(domain='https://twitter.com', dir_str='directory', start_url='/i/directory/profiles',
+                     first_class='directory-page', second_class='row')
     grabber.start_workers()
-
-# for link in links:
-#     print(link)

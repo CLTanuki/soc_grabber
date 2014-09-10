@@ -1,4 +1,5 @@
 __author__ = 'cltanuki'
+from os import path
 from time import sleep
 from models import db, TwitterUser
 
@@ -14,11 +15,15 @@ class Commiter():
             self.profile_list.append(self.profile_queue.get())
 
     def main(self):
-        TwitterUser.create_table()
+        if not path.isfile('people.db'):
+            TwitterUser.create_table()
         self.get_profile_links()
-        if len(self.profile_list) < 1:
+        if self.profile_list:
+            with db.transaction():
+                print(self.profile_list)
+                for data_dict in self.profile_list:
+                    print(data_dict)
+                    TwitterUser.create(**data_dict)
+        else:
             sleep(10)
             self.main()
-        with db.transaction():
-            for data_dict in self.profile_list:
-                TwitterUser.create(**data_dict)
