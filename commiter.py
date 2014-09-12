@@ -20,10 +20,7 @@ class Commiter():
         self.get_profile_links()
         if self.profile_list:
             with db.transaction():
-                print(self.profile_list)
-                for data_dict in self.profile_list:
-                    print(data_dict)
-                    TwitterUser.create(**data_dict)
+                TwitterUser.insert_many(self.profile_list).execute()
         else:
             sleep(10)
             self.main()
