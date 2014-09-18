@@ -8,10 +8,11 @@ from peewee import IntegrityError
 
 
 class ProxyGrabber():
-    def __init__(self):
+    def __init__(self, collect_mode=False):
         self.proxy_dict = {"http": "", "https": ""}
         self.port_dict = {'3128': '1', '8080': '2', '80': '3'}
         self.proxies = []
+        self.collect_mode = collect_mode
 
     def request_proxy(self, p_type):
         url = 'http://spys.ru/en/https-ssl-proxy/'
@@ -40,20 +41,18 @@ class ProxyGrabber():
             proxy.level = speed
             proxy.save()
         print('Done checking')
-        Proxy.delete().where(Proxy.level is False)
+        Proxy.delete().where(Proxy.level == False)
 
     def commit(self):
-        print('Commiting')
         meta_db.connect()
         meta_db.create_table(Proxy, safe=True)
         with meta_db.transaction():
             #Proxy.insert_many(self.proxies).execute()
             for data_dict in self.proxies:
-                # try:
+                try:
                     Proxy.create(**data_dict)
-                # except IntegrityError:
-                #     pass
-        print('Commited: ' + str(len(self.proxies)))
+                except IntegrityError:
+                    pass
         self.proxies = []
 
     def collect(self):
@@ -75,6 +74,8 @@ class ProxyGrabber():
         while True:
             self.collect()
             self.commit()
+            if self.collect_mode:
+                break
             self.check()
 
 
