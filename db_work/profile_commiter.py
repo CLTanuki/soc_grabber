@@ -16,7 +16,6 @@ class Commiter():
             self.profile_list.append(self.profile_queue.get())
 
     def main(self):
-        #print('Commiter started.')
         soc_db.connect()
         soc_db.create_table(self.table, safe=True)
         while True:
