@@ -35,26 +35,45 @@ class Rows(Model):
     text = CharField(null=True)
     favorite_count = CharField(null=True)
 
+    class Meta:
+        database = db
 
-db.connect()
-db.create_table(Rows, safe=True)
-api = TwitterAPI('65dxiPhn10SE3zJT6fVEPWsVx', 'VmK0rQFapjymwtSNpidi0Yfe16mjMdHXBhZTmYVc8dwb1joAxX',
-                 '109566527-ZufkixJ3XInW91ZE34hGFtxQcrXGOzBS7vBdApUP', '0N5poNnJoDsWO8Yvf1FfNECfOJKJm7nKthPVzow7apyPu')
 
-user_ids = [x.twi_id for x in Tweeple.select()]
-counter = 0
-
-for twi_id in user_ids:
-    r = api.request('statuses/user_timeline', {'user_id': twi_id, 'count': '100'})
-    with db.transaction():
-        for tweet in r:
+def main():
+    db.connect()
+    db.create_table(Rows, safe=True)
+    api = TwitterAPI('65dxiPhn10SE3zJT6fVEPWsVx', 'VmK0rQFapjymwtSNpidi0Yfe16mjMdHXBhZTmYVc8dwb1joAxX',
+                     '109566527-ZufkixJ3XInW91ZE34hGFtxQcrXGOzBS7vBdApUP', '0N5poNnJoDsWO8Yvf1FfNECfOJKJm7nKthPVzow7apyPu')
+    user_ids = [x.twi_id for x in Tweeple.select().where(Tweeple.filled_tweets == 0)]
+    counter = 0
+    bad_conter = 0
+    iter = len(user_ids)
+    print(iter)
+    sleep(15*60)
+    for twi_id in user_ids:
+        r = api.request('statuses/user_timeline', {'user_id': twi_id, 'count': '100'})
+        with db.transaction():
             user = Tweeple.get(twi_id=twi_id)
-            del tweet['id']
-            del tweet['user']
-            print(tweet)
-            Rows.create(**tweet)
-    counter += 1
-    if counter > 300:
-        sleep(15*60)
-        counter = 0
-    print('+1')
+            for tweet in r:
+                tweet['user'] = user
+                if 'id' not in tweet.keys():
+                    iter -= 1
+                    counter += 1
+                    bad_conter += 1
+                    print(iter, 'Bad')
+                    continue
+                del tweet['id']
+                Rows.create(**tweet)
+            user.filled_tweets = 1
+            user.save()
+        counter += 1
+        if counter > 290:
+            sleep(15*60)
+            counter = 0
+        iter -= 1
+        print(iter)
+    print(bad_conter)
+
+
+if __name__ == '__main__':
+    main()
